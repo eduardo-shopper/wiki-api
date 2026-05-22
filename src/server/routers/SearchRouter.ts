@@ -1,22 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express'
-import * as repo from '@contexts/article/ArticleRepository'
+import * as controller from '@contexts/article/ArticleController'
 
 const searchRouter = Router()
 
-searchRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { q, limit, sourceType, refId } = req.query
-
-    if (sourceType && refId) {
-      const articles = await repo.findBySource(String(sourceType), String(refId))
-      return res.json({ results: articles, total: articles.length })
-    }
-
-    if (!q) return res.status(400).json({ error: 'Missing required query parameter: q' })
-
-    const articles = await repo.searchArticles(String(q), Number(limit ?? 20))
-    return res.json({ query: q, results: articles, total: articles.length })
-  } catch (err) { next(err) }
+searchRouter.get('/', (req: Request, res: Response, next: NextFunction) => {
+  const { sourceType, refId } = req.query
+  if (sourceType && refId) return controller.findBySource(req, res, next)
+  return controller.search(req, res, next)
 })
 
 export default searchRouter

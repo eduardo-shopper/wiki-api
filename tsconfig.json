@@ -8,6 +8,7 @@
             "@util/*": ["util/*"],
             "@entities/*": ["entities/*"],
             "@contexts/*": ["contexts/*"],
+            "@interfaces/*": ["interfaces/*"],
             "@/*": ["*"]
         },
         "allowJs": true,

@@ -11,7 +11,8 @@
         "clean": "rm -rf dist",
         "start": "node dist/src/server/index.js",
         "start:dev": "tsnd -r tsconfig-paths/register --respawn --inspect=0.0.0.0:9802 -- src/server/index.ts",
-        "migrate": "ts-node -r tsconfig-paths/register node_modules/.bin/knex --knexfile src/database/knexfile.ts migrate:latest",
+        "db:create": "ts-node -r tsconfig-paths/register src/database/scripts/createDb.ts",
+        "migrate": "ts-node -r tsconfig-paths/register src/database/scripts/createDb.ts && ts-node -r tsconfig-paths/register node_modules/.bin/knex --knexfile src/database/knexfile.ts migrate:latest",
         "migrate:rollback": "ts-node -r tsconfig-paths/register node_modules/.bin/knex --knexfile src/database/knexfile.ts migrate:rollback",
         "db:reset": "ts-node -r tsconfig-paths/register src/database/scripts/resetDb.ts && yarn migrate",
         "lint": "eslint . --ext .ts,.js,.json"

@@ -1,12 +1,14 @@
 export class BaseError extends Error {
+  name: string
+  status = 500
   code: string
-  title: string
-  status: number
+  title?: string
 
-  constructor(message: string, code = 'ERR500', title = 'Internal Server Error', status = 500) {
-    super(message)
-    this.code = code
+  constructor(message?: string, code?: string, title?: string) {
+    super(message || 'Internal Server Error')
+    Error.captureStackTrace(this, this.constructor)
+    this.name = this.constructor.name
     this.title = title
-    this.status = status
+    this.code = code ?? 'ERR500'
   }
 }

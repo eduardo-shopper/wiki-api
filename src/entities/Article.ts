@@ -53,6 +53,7 @@ export interface UpdateArticleInput {
   context?: ArticleContext | null
   status?: ArticleStatus
   idCategory?: number | null
+  changedBy?: string
 }
 
 export interface AddSourceInput {
@@ -65,4 +66,35 @@ export interface ListFilters {
   status?: string
   domain?: string
   type?: string
+}
+
+export interface ArticleTag {
+  id: number
+  slug: string
+  name: string
+}
+
+export interface ArticleAsset {
+  id: number
+  idArticle: number
+  type: 'image' | 'video' | 'file'
+  url: string
+  caption: string | null
+  position: number
+  createdAt: Date
+}
+
+export interface ArticleRevision {
+  id: number
+  idArticle: number
+  changedBy: string | null
+  snapshot: Record<string, unknown>
+  createdAt: Date
+}
+
+export interface AddAssetInput {
+  type: 'image' | 'video' | 'file'
+  url: string
+  caption?: string
+  position?: number
 }
