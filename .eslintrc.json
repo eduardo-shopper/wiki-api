@@ -1,0 +1,42 @@
+{
+    "env": {
+        "node": true
+    },
+    "extends": ["eslint:recommended", "plugin:prettier/recommended", "plugin:@typescript-eslint/recommended"],
+    "parser": "@typescript-eslint/parser",
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+    },
+    "plugins": ["prettier", "@typescript-eslint"],
+    "rules": {
+        "indent": ["error", 2, { "SwitchCase": 1 }],
+        "@typescript-eslint/no-unused-vars": ["error"],
+        "quotes": ["error", "single"],
+        "linebreak-style": ["error", "unix"],
+        "semi": ["error", "never"],
+        "semi-spacing": ["error"],
+        "no-console": ["error", { "allow": ["warn", "error", "info"] }],
+        "radix": ["error", "as-needed"],
+        "import/prefer-default-export": "off",
+        "import/no-extraneous-dependencies": "off",
+        "@typescript-eslint/no-var-requires": "off",
+        "prettier/prettier": "warn",
+        "require-await": "error",
+        "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1, "maxBOF": 1 }],
+        "no-unused-vars": ["error", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false, "caughtErrors": "all" }],
+        "no-trailing-spaces": "error",
+        "complexity": ["error", 5],
+        "max-depth": ["error", 4],
+        "max-lines-per-function": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }],
+        "max-lines": ["error", { "max": 3000, "skipBlankLines": true, "skipComments": true }],
+        "max-len": ["error", { "code": 180, "tabWidth": 4, "ignoreComments": true, "ignoreTrailingComments": true, "ignoreUrls": true }],
+        "no-unreachable": "error",
+        "no-use-before-define": "error",
+        "no-await-in-loop": "error"
+    }
+}

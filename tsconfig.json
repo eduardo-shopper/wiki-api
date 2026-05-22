@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "commonjs",
+        "baseUrl": "./src",
+        "paths": {
+            "@server/*": ["server/*"],
+            "@util/*": ["util/*"],
+            "@entities/*": ["entities/*"],
+            "@contexts/*": ["contexts/*"],
+            "@/*": ["*"]
+        },
+        "allowJs": true,
+        "outDir": "./dist",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true
+    },
+    "include": ["src/**/*", "src/**/*.json"]
+}
