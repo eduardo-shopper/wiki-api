@@ -3,17 +3,27 @@ import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
 import { BadRequestError } from '@util/errors/RequestErrors'
 
-interface SearchInput { q: string; limit: number }
-export interface SearchOutput { query: string; results: Article[]; total: number }
+interface SearchInput {
+  q: string
+  limit: number
+}
+export interface SearchOutput {
+  query: string
+  results: Article[]
+  total: number
+}
 
-export class SearchArticlesUseCase extends BaseUseCase<IArticleRepository, SearchInput, SearchOutput> {
+function parseQuery(q: unknown): string {
+  if (!q || typeof q !== 'string' || !q.trim()) throw new BadRequestError('Missing required parameter: q')
+  return q.trim()
+}
+
+export class SearchArticlesUseCase extends BaseUseCase<IArticleRepository, SearchOutput> {
   private input: SearchInput | null = null
 
   prepare(raw: unknown): void {
     const { q, limit } = (raw ?? {}) as Record<string, unknown>
-    if (!q || typeof q !== 'string' || !q.trim())
-      throw new BadRequestError('Missing required parameter: q')
-    this.input = { q: q.trim(), limit: limit ? Number(limit) : 20 }
+    this.input = { q: parseQuery(q), limit: limit ? Number(limit) : 20 }
   }
 
   async execute(): Promise<SearchOutput> {

@@ -3,14 +3,16 @@ import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
 import { BadRequestError, NotFoundError } from '@util/errors/RequestErrors'
 
-interface GetArticleInput { id: number }
+interface GetArticleInput {
+  id: number
+}
 export type GetArticleOutput = Article & {
   sources: ArticleSource[]
   tags: ArticleTag[]
   assets: ArticleAsset[]
 }
 
-export class GetArticleUseCase extends BaseUseCase<IArticleRepository, GetArticleInput, GetArticleOutput> {
+export class GetArticleUseCase extends BaseUseCase<IArticleRepository, GetArticleOutput> {
   private input: GetArticleInput | null = null
 
   prepare(raw: unknown): void {
@@ -24,11 +26,7 @@ export class GetArticleUseCase extends BaseUseCase<IArticleRepository, GetArticl
     const { id } = this.input!
     const article = await this.repository.getArticleById(id)
     if (!article) throw new NotFoundError('Article not found')
-    const [sources, tags, assets] = await Promise.all([
-      this.repository.getArticleSources(id),
-      this.repository.getArticleTags(id),
-      this.repository.getArticleAssets(id),
-    ])
+    const [sources, tags, assets] = await Promise.all([this.repository.getArticleSources(id), this.repository.getArticleTags(id), this.repository.getArticleAssets(id)])
     return { ...article, sources, tags, assets }
   }
 }

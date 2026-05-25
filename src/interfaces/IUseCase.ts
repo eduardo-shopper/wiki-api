@@ -11,7 +11,7 @@ export interface IUseCase<Output> {
   execute(): Promise<Output>
 }
 
-export abstract class BaseUseCase<Repository, Input, Output> implements IUseCase<Output> {
+export abstract class BaseUseCase<Repository, Output> implements IUseCase<Output> {
   public readonly repository: Repository
 
   constructor(repository: Repository) {

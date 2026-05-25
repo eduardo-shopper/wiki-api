@@ -1,6 +1,14 @@
 import {
-  Article, ArticleSource, ArticleTag, ArticleAsset, ArticleRevision,
-  CreateArticleInput, UpdateArticleInput, AddSourceInput, AddAssetInput, ListFilters,
+  Article,
+  ArticleSource,
+  ArticleTag,
+  ArticleAsset,
+  ArticleRevision,
+  CreateArticleInput,
+  UpdateArticleInput,
+  AddSourceInput,
+  AddAssetInput,
+  ListFilters,
 } from '@entities/Article'
 
 export interface IArticleRepository {

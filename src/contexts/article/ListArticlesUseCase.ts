@@ -2,7 +2,7 @@ import { Article, ListFilters } from '@entities/Article'
 import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
 
-export class ListArticlesUseCase extends BaseUseCase<IArticleRepository, ListFilters, Article[]> {
+export class ListArticlesUseCase extends BaseUseCase<IArticleRepository, Article[]> {
   private filters: ListFilters = {}
 
   prepare(raw: unknown): void {
@@ -14,7 +14,7 @@ export class ListArticlesUseCase extends BaseUseCase<IArticleRepository, ListFil
     }
   }
 
-  async execute(): Promise<Article[]> {
+  execute(): Promise<Article[]> {
     return this.repository.listArticles(this.filters)
   }
 }

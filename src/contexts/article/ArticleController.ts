@@ -18,146 +18,36 @@ import { GetArticleAssetsUseCase } from './GetArticleAssetsUseCase'
 import { AddAssetUseCase } from './AddAssetUseCase'
 import { RemoveAssetUseCase } from './RemoveAssetUseCase'
 
-export const search = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new SearchArticlesUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare(req.query)
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
+type AnyUseCase = { prepare(input: unknown): void | Promise<void>; execute(): Promise<unknown> }
+type Ctor = new (repo: SQLArticleRepository) => AnyUseCase
+
+function handle(Cls: Ctor, getInput: (req: Request) => unknown, status = 200) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const uc = new Cls(new SQLArticleRepository())
+    try {
+      await uc.prepare(getInput(req))
+      const result = await uc.execute()
+      if (status === 204) return res.status(204).send()
+      return new SuccessResponse(res, result, status)
+    } catch (err) {
+      next(err)
+    }
+  }
 }
 
-export const findBySource = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new FindBySourceUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare(req.query)
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const listArticles = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new ListArticlesUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare(req.query)
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const getArticle = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new GetArticleUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const createArticle = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new CreateArticleUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare(req.body)
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result, 201)
-  } catch (err) { next(err) }
-}
-
-export const updateArticle = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new UpdateArticleUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id, ...req.body })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const deleteArticle = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new DeleteArticleUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id })
-    await useCase.execute()
-    res.status(204).send()
-  } catch (err) { next(err) }
-}
-
-export const getArticleSources = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new GetSourcesUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const addSource = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new AddSourceUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id, ...req.body })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result, 201)
-  } catch (err) { next(err) }
-}
-
-export const removeSource = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new RemoveSourceUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ sourceId: req.params.sourceId })
-    await useCase.execute()
-    res.status(204).send()
-  } catch (err) { next(err) }
-}
-
-export const getArticleHistory = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new GetArticleHistoryUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const getArticleTags = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new GetArticleTagsUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const setArticleTags = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new SetArticleTagsUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id, tags: req.body })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const getArticleAssets = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new GetArticleAssetsUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result)
-  } catch (err) { next(err) }
-}
-
-export const addAsset = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new AddAssetUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ id: req.params.id, ...req.body })
-    const result = await useCase.execute()
-    return new SuccessResponse(res, result, 201)
-  } catch (err) { next(err) }
-}
-
-export const removeAsset = async (req: Request, res: Response, next: NextFunction) => {
-  const useCase = new RemoveAssetUseCase(new SQLArticleRepository())
-  try {
-    useCase.prepare({ assetId: req.params.assetId })
-    await useCase.execute()
-    res.status(204).send()
-  } catch (err) { next(err) }
-}
+export const search = handle(SearchArticlesUseCase, (req) => req.query)
+export const findBySource = handle(FindBySourceUseCase, (req) => req.query)
+export const listArticles = handle(ListArticlesUseCase, (req) => req.query)
+export const getArticle = handle(GetArticleUseCase, (req) => ({ id: req.params.id }))
+export const createArticle = handle(CreateArticleUseCase, (req) => req.body, 201)
+export const updateArticle = handle(UpdateArticleUseCase, (req) => ({ id: req.params.id, ...req.body }))
+export const deleteArticle = handle(DeleteArticleUseCase, (req) => ({ id: req.params.id }), 204)
+export const getArticleSources = handle(GetSourcesUseCase, (req) => ({ id: req.params.id }))
+export const addSource = handle(AddSourceUseCase, (req) => ({ id: req.params.id, ...req.body }), 201)
+export const removeSource = handle(RemoveSourceUseCase, (req) => ({ sourceId: req.params.sourceId }), 204)
+export const getArticleHistory = handle(GetArticleHistoryUseCase, (req) => ({ id: req.params.id }))
+export const getArticleTags = handle(GetArticleTagsUseCase, (req) => ({ id: req.params.id }))
+export const setArticleTags = handle(SetArticleTagsUseCase, (req) => ({ id: req.params.id, tags: req.body }))
+export const getArticleAssets = handle(GetArticleAssetsUseCase, (req) => ({ id: req.params.id }))
+export const addAsset = handle(AddAssetUseCase, (req) => ({ id: req.params.id, ...req.body }), 201)
+export const removeAsset = handle(RemoveAssetUseCase, (req) => ({ assetId: req.params.assetId }), 204)

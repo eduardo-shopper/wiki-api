@@ -3,10 +3,16 @@ import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
 import { BadRequestError } from '@util/errors/RequestErrors'
 
-interface FindBySourceInput { sourceType: string; refId: string }
-export interface FindBySourceOutput { results: Article[]; total: number }
+interface FindBySourceInput {
+  sourceType: string
+  refId: string
+}
+export interface FindBySourceOutput {
+  results: Article[]
+  total: number
+}
 
-export class FindBySourceUseCase extends BaseUseCase<IArticleRepository, FindBySourceInput, FindBySourceOutput> {
+export class FindBySourceUseCase extends BaseUseCase<IArticleRepository, FindBySourceOutput> {
   private input: FindBySourceInput | null = null
 
   prepare(raw: unknown): void {

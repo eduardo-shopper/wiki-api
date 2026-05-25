@@ -2,9 +2,11 @@ import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
 import { BadRequestError } from '@util/errors/RequestErrors'
 
-interface Input { assetId: number }
+interface Input {
+  assetId: number
+}
 
-export class RemoveAssetUseCase extends BaseUseCase<IArticleRepository, Input, void> {
+export class RemoveAssetUseCase extends BaseUseCase<IArticleRepository, void> {
   private input: Input | null = null
 
   prepare(raw: unknown): void {
@@ -14,7 +16,7 @@ export class RemoveAssetUseCase extends BaseUseCase<IArticleRepository, Input, v
     this.input = { assetId: parsed }
   }
 
-  async execute(): Promise<void> {
+  execute(): Promise<void> {
     return this.repository.removeAsset(this.input!.assetId)
   }
 }

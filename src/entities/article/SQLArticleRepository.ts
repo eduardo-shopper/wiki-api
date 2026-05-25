@@ -1,7 +1,16 @@
 import QueryBuilder from '@/database/queryBuilder'
 import {
-  Article, ArticleSource, ArticleTag, ArticleAsset, ArticleRevision, ArticleContext,
-  CreateArticleInput, UpdateArticleInput, AddSourceInput, AddAssetInput, ListFilters,
+  Article,
+  ArticleSource,
+  ArticleTag,
+  ArticleAsset,
+  ArticleRevision,
+  ArticleContext,
+  CreateArticleInput,
+  UpdateArticleInput,
+  AddSourceInput,
+  AddAssetInput,
+  ListFilters,
 } from '@entities/Article'
 import { toSlug, uniqueSlug } from '@util/slug'
 import { NotFoundError } from '@util/errors/RequestErrors'
@@ -91,6 +100,34 @@ function serializeJson(val: unknown): string | null {
   return JSON.stringify(val)
 }
 
+function contentSnapshot(article: Article) {
+  return {
+    title: article.title,
+    summary: article.summary,
+    content: article.content,
+    keywords: article.keywords,
+  }
+}
+
+function buildArticleRow(input: CreateArticleInput, slug: string) {
+  const { summary = null, keywords = null, status = 'draft', idCategory = null, createdBy = null } = input
+  return {
+    slug,
+    title: input.title,
+    content: input.content,
+    summary,
+    keywords,
+    status,
+    id_category: idCategory,
+    created_by: createdBy,
+    context: serializeJson(input.context ?? null),
+  }
+}
+
+function isContentChange(input: UpdateArticleInput): boolean {
+  return input.title !== undefined || input.content !== undefined || input.summary !== undefined || input.keywords !== undefined
+}
+
 function buildPatch(input: UpdateArticleInput): Record<string, unknown> {
   const patch: Record<string, unknown> = {}
   for (const [key, col] of Object.entries(PATCH_FIELDS)) {
@@ -101,10 +138,7 @@ function buildPatch(input: UpdateArticleInput): Record<string, unknown> {
   return patch
 }
 
-const LIST_COLS = [
-  'id', 'slug', 'title', 'summary', 'status', 'keywords', 'context',
-  'id_category', 'created_by', 'created_at', 'updated_at',
-]
+const LIST_COLS = ['id', 'slug', 'title', 'summary', 'status', 'keywords', 'context', 'id_category', 'created_by', 'created_at', 'updated_at']
 
 async function generateSlug(title: string): Promise<string> {
   const base = toSlug(title)
@@ -115,11 +149,7 @@ async function generateSlug(title: string): Promise<string> {
 
 export class SQLArticleRepository implements IArticleRepository {
   async searchArticles(q: string, limit = 20): Promise<Article[]> {
-    const rows = await QueryBuilder('articles')
-      .whereRaw(FULLTEXT, [q])
-      .orderByRaw(`${FULLTEXT} DESC`, [q])
-      .select(LIST_COLS)
-      .limit(limit)
+    const rows = await QueryBuilder('articles').whereRaw(FULLTEXT, [q]).orderByRaw(`${FULLTEXT} DESC`, [q]).select(LIST_COLS).limit(limit)
     return rows.map(parseArticle)
   }
 
@@ -138,29 +168,24 @@ export class SQLArticleRepository implements IArticleRepository {
   }
 
   async findBySource(type: string, refId: string): Promise<Article[]> {
-    const rows = await QueryBuilder('articles as a')
-      .join('article_sources as s', 'a.id', 's.id_article')
-      .where('s.type', type)
-      .where('s.ref_id', refId)
-      .select('a.*')
+    const rows = await QueryBuilder('articles as a').join('article_sources as s', 'a.id', 's.id_article').where('s.type', type).where('s.ref_id', refId).select('a.*')
     return rows.map(parseArticle)
   }
 
   async createArticle(input: CreateArticleInput): Promise<Article> {
     const slug = input.slug ?? (await generateSlug(input.title))
-    const [id] = await QueryBuilder('articles').insert({
-      slug,
-      title: input.title,
-      content: input.content,
-      summary: input.summary ?? null,
-      keywords: input.keywords ?? null,
-      context: serializeJson(input.context ?? null),
-      status: input.status ?? 'draft',
-      id_category: input.idCategory ?? null,
-      created_by: input.createdBy ?? null,
-    })
+    const [id] = await QueryBuilder('articles').insert(buildArticleRow(input, slug))
+    return this.saveInitialRevision(id, input.createdBy ?? null)
+  }
+
+  private async saveInitialRevision(id: number, changedBy: string | null): Promise<Article> {
     const created = await this.getArticleById(id)
     if (!created) throw new NotFoundError('Article not found after creation')
+    await QueryBuilder('article_revisions').insert({
+      id_article: id,
+      changed_by: changedBy,
+      snapshot: JSON.stringify(contentSnapshot(created)),
+    })
     return created
   }
 
@@ -170,20 +195,13 @@ export class SQLArticleRepository implements IArticleRepository {
     await QueryBuilder('articles').where('id', id).update(patch)
     const updated = await this.getArticleById(id)
     if (!updated) throw new NotFoundError('Article not found')
-    await QueryBuilder('article_revisions').insert({
-      id_article: id,
-      changed_by: input.changedBy ?? null,
-      snapshot: JSON.stringify({
-        slug: updated.slug,
-        title: updated.title,
-        summary: updated.summary,
-        content: updated.content,
-        keywords: updated.keywords,
-        context: updated.context,
-        status: updated.status,
-        idCategory: updated.idCategory,
-      }),
-    })
+    if (isContentChange(input)) {
+      await QueryBuilder('article_revisions').insert({
+        id_article: id,
+        changed_by: input.changedBy ?? null,
+        snapshot: JSON.stringify(contentSnapshot(updated)),
+      })
+    }
     return updated
   }
 
@@ -214,26 +232,21 @@ export class SQLArticleRepository implements IArticleRepository {
   }
 
   async getArticleTags(idArticle: number): Promise<ArticleTag[]> {
-    const rows = await QueryBuilder('tags as t')
-      .join('article_tags as at', 't.id', 'at.id_tag')
-      .where('at.id_article', idArticle)
-      .select('t.id', 't.slug', 't.name')
+    const rows = await QueryBuilder('tags as t').join('article_tags as at', 't.id', 'at.id_tag').where('at.id_article', idArticle).select('t.id', 't.slug', 't.name')
     return rows.map(parseTag)
   }
 
   async setArticleTags(idArticle: number, tags: { slug: string; name: string }[]): Promise<ArticleTag[]> {
     await QueryBuilder('article_tags').where('id_article', idArticle).delete()
     if (tags.length === 0) return []
-    for (const tag of tags) {
-      await QueryBuilder('tags')
-        .insert({ slug: tag.slug, name: tag.name })
-        .onConflict('slug')
-        .merge({ name: tag.name })
+    for await (const tag of tags) {
+      await QueryBuilder('tags').insert({ slug: tag.slug, name: tag.name }).onConflict('slug').merge({ name: tag.name })
     }
-    const tagRows = await QueryBuilder('tags').whereIn('slug', tags.map((t) => t.slug))
-    await QueryBuilder('article_tags').insert(
-      tagRows.map((t: Record<string, unknown>) => ({ id_article: idArticle, id_tag: t.id }))
+    const tagRows = await QueryBuilder('tags').whereIn(
+      'slug',
+      tags.map((t) => t.slug)
     )
+    await QueryBuilder('article_tags').insert(tagRows.map((t: Record<string, unknown>) => ({ id_article: idArticle, id_tag: t.id })))
     return tagRows.map(parseTag)
   }
 
@@ -260,9 +273,7 @@ export class SQLArticleRepository implements IArticleRepository {
   }
 
   async getArticleHistory(idArticle: number): Promise<ArticleRevision[]> {
-    const rows = await QueryBuilder('article_revisions')
-      .where('id_article', idArticle)
-      .orderBy('created_at', 'desc')
+    const rows = await QueryBuilder('article_revisions').where('id_article', idArticle).orderBy('created_at', 'desc')
     return rows.map(parseRevision)
   }
 }

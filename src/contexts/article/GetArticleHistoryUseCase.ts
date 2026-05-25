@@ -3,9 +3,11 @@ import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
 import { BadRequestError } from '@util/errors/RequestErrors'
 
-interface Input { id: number }
+interface Input {
+  id: number
+}
 
-export class GetArticleHistoryUseCase extends BaseUseCase<IArticleRepository, Input, ArticleRevision[]> {
+export class GetArticleHistoryUseCase extends BaseUseCase<IArticleRepository, ArticleRevision[]> {
   private input: Input | null = null
 
   prepare(raw: unknown): void {
@@ -15,7 +17,7 @@ export class GetArticleHistoryUseCase extends BaseUseCase<IArticleRepository, In
     this.input = { id: parsed }
   }
 
-  async execute(): Promise<ArticleRevision[]> {
+  execute(): Promise<ArticleRevision[]> {
     return this.repository.getArticleHistory(this.input!.id)
   }
 }

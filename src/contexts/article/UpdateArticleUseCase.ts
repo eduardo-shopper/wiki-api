@@ -1,7 +1,7 @@
 import { Article, ArticleContext, ArticleStatus, UpdateArticleInput } from '@entities/Article'
 import { IArticleRepository } from '@entities/article/IArticleRepository'
 import { BaseUseCase } from '@interfaces/IUseCase'
-import { BadRequestError } from '@util/errors/RequestErrors'
+import { parseNumericId } from '@util/validate'
 
 interface UpdateInput {
   id: number
@@ -14,26 +14,24 @@ interface UpdateInput {
   changedBy?: string
 }
 
-export class UpdateArticleUseCase extends BaseUseCase<IArticleRepository, UpdateInput, Article> {
+export class UpdateArticleUseCase extends BaseUseCase<IArticleRepository, Article> {
   private input: UpdateInput | null = null
 
   prepare(raw: unknown): void {
-    const { id, title, content, summary, keywords, context, status, changedBy } = (raw ?? {}) as Record<string, unknown>
-    const parsed = Number(id)
-    if (!id || isNaN(parsed)) throw new BadRequestError('Missing or invalid parameter: id')
+    const body = (raw ?? {}) as Record<string, unknown>
     this.input = {
-      id: parsed,
-      ...(title !== undefined && { title: title as string }),
-      ...(content !== undefined && { content: content as string }),
-      ...(summary !== undefined && { summary: summary as string | null }),
-      ...(keywords !== undefined && { keywords: keywords as string | null }),
-      ...(context !== undefined && { context: context as ArticleContext | null }),
-      ...(status !== undefined && { status: status as ArticleStatus }),
-      ...(changedBy !== undefined && { changedBy: changedBy as string }),
+      id: parseNumericId(body.id),
+      title: body.title as string | undefined,
+      content: body.content as string | undefined,
+      summary: body.summary as string | null | undefined,
+      keywords: body.keywords as string | null | undefined,
+      context: body.context as ArticleContext | null | undefined,
+      status: body.status as ArticleStatus | undefined,
+      changedBy: body.changedBy as string | undefined,
     }
   }
 
-  async execute(): Promise<Article> {
+  execute(): Promise<Article> {
     const { id, ...patch } = this.input!
     return this.repository.updateArticle(id, patch as UpdateArticleInput)
   }
