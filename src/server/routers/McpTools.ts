@@ -7,6 +7,7 @@ export const TOOLS = [
       properties: {
         q: { type: 'string', description: 'Search keywords or phrase' },
         limit: { type: 'number', description: 'Max results (default 20)' },
+        status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'Optional status filter' },
       },
       required: ['q'],
     },
@@ -19,6 +20,7 @@ export const TOOLS = [
       properties: {
         q: { type: 'string', description: 'Natural-language question or description to search by meaning' },
         limit: { type: 'number', description: 'Max results (default 10)' },
+        status: { type: 'string', enum: ['draft', 'published', 'archived'], description: 'Optional status filter' },
       },
       required: ['q'],
     },

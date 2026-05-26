@@ -154,21 +154,23 @@ async function generateSlug(title: string): Promise<string> {
 }
 
 export class SQLArticleRepository implements IArticleRepository {
-  async searchArticles(q: string, limit = 20): Promise<Article[]> {
-    const rows = await QueryBuilder('articles')
-      .whereRaw(FTS_WHERE, [q])
+  async searchArticles(q: string, limit = 20, status?: Article['status']): Promise<Article[]> {
+    let searchQuery = QueryBuilder('articles').whereRaw(FTS_WHERE, [q])
+    if (status) searchQuery = searchQuery.where('status', status)
+    const rows = await searchQuery
       .orderByRaw(`${FTS_RANK} DESC`, [q])
       .select(LIST_COLS)
       .limit(limit)
     return rows.map(parseArticle)
   }
 
-  async searchSemantic(q: string, limit = 10): Promise<Article[]> {
+  async searchSemantic(q: string, limit = 10, status?: Article['status']): Promise<Article[]> {
     const emb = await generateEmbedding(q)
     if (!emb) return []
     const vec = `[${emb.join(',')}]`
-    const rows = await QueryBuilder('articles')
-      .whereNotNull('embedding')
+    let searchQuery = QueryBuilder('articles').whereNotNull('embedding')
+    if (status) searchQuery = searchQuery.where('status', status)
+    const rows = await searchQuery
       .orderByRaw('embedding <=> ?::vector', [vec])
       .select(LIST_COLS)
       .limit(limit)

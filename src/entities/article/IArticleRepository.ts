@@ -4,6 +4,7 @@ import {
   ArticleTag,
   ArticleAsset,
   ArticleRevision,
+  ArticleStatus,
   CreateArticleInput,
   UpdateArticleInput,
   AddSourceInput,
@@ -12,8 +13,8 @@ import {
 } from '@entities/Article'
 
 export interface IArticleRepository {
-  searchArticles(q: string, limit: number): Promise<Article[]>
-  searchSemantic(q: string, limit: number): Promise<Article[]>
+  searchArticles(q: string, limit: number, status?: ArticleStatus): Promise<Article[]>
+  searchSemantic(q: string, limit: number, status?: ArticleStatus): Promise<Article[]>
   listArticles(filters: ListFilters): Promise<Article[]>
   getArticleById(id: number): Promise<Article | null>
   findBySource(type: string, refId: string): Promise<Article[]>
