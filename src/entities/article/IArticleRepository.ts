@@ -13,6 +13,7 @@ import {
 
 export interface IArticleRepository {
   searchArticles(q: string, limit: number): Promise<Article[]>
+  searchSemantic(q: string, limit: number): Promise<Article[]>
   listArticles(filters: ListFilters): Promise<Article[]>
   getArticleById(id: number): Promise<Article | null>
   findBySource(type: string, refId: string): Promise<Article[]>

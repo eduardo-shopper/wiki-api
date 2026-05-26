@@ -6,7 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     table.integer('id_article').unsigned().notNullable()
     table.foreign('id_article').references('id').inTable('articles').onDelete('CASCADE')
     table.string('changed_by', 255).nullable()
-    table.json('snapshot').notNullable()
+    table.jsonb('snapshot').notNullable()
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now())
     table.index('id_article')
   })

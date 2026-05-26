@@ -3,6 +3,7 @@ import { SQLArticleRepository } from '@entities/article/SQLArticleRepository'
 import { ArticleContext, ArticleStatus, SourceType } from '@entities/Article'
 import { BadRequestError } from '@util/errors/RequestErrors'
 import { SearchArticlesUseCase } from '@contexts/article/SearchArticlesUseCase'
+import { SearchSemanticUseCase } from '@contexts/article/SearchSemanticUseCase'
 import { ListArticlesUseCase } from '@contexts/article/ListArticlesUseCase'
 import { GetArticleUseCase } from '@contexts/article/GetArticleUseCase'
 import { FindBySourceUseCase } from '@contexts/article/FindBySourceUseCase'
@@ -41,6 +42,8 @@ async function runUseCase(Cls: UseCaseCtor, args: Args): Promise<unknown> {
 
 const TOOL_HANDLERS: Record<string, (args: Args) => Promise<unknown>> = {
   wiki_search: (args) => runUseCase(SearchArticlesUseCase, args),
+
+  wiki_search_semantic: (args) => runUseCase(SearchSemanticUseCase, args),
 
   wiki_list_articles: (args) => runUseCase(ListArticlesUseCase, args),
 

@@ -1,12 +1,24 @@
 export const TOOLS = [
   {
     name: 'wiki_search',
-    description: 'Full-text search across wiki articles (title, summary, content, keywords). Use this first to find related content before creating anything.',
+    description: 'Keyword full-text search across wiki articles (title, summary, content, keywords). Use this first to find related content before creating anything.',
     inputSchema: {
       type: 'object',
       properties: {
         q: { type: 'string', description: 'Search keywords or phrase' },
         limit: { type: 'number', description: 'Max results (default 20)' },
+      },
+      required: ['q'],
+    },
+  },
+  {
+    name: 'wiki_search_semantic',
+    description: 'Semantic vector search using AI embeddings. Finds articles by meaning rather than exact keywords — ideal for questions like "how does X work?" or "what covers topic Y?". Requires OPENAI_API_KEY to be set; returns empty results otherwise.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        q: { type: 'string', description: 'Natural-language question or description to search by meaning' },
+        limit: { type: 'number', description: 'Max results (default 10)' },
       },
       required: ['q'],
     },

@@ -14,9 +14,15 @@ import {
 } from '@entities/Article'
 import { toSlug, uniqueSlug } from '@util/slug'
 import { NotFoundError } from '@util/errors/RequestErrors'
+import { generateEmbedding, buildEmbeddingText } from '@util/embedding'
 import { IArticleRepository } from './IArticleRepository'
 
-const FULLTEXT = 'MATCH(title, summary, content, keywords) AGAINST(? IN BOOLEAN MODE)'
+// PostgreSQL full-text search using tsvector/tsquery.
+// The GIN functional index on this same expression makes these queries fast.
+const FTS_VEC = `to_tsvector('portuguese', coalesce(title,'') || ' ' || coalesce(summary,'') || ' ' || coalesce(keywords,'') || ' ' || coalesce(content,''))`
+const FTS_QUERY = `websearch_to_tsquery('portuguese', ?)`
+const FTS_WHERE = `${FTS_VEC} @@ ${FTS_QUERY}`
+const FTS_RANK = `ts_rank(${FTS_VEC}, ${FTS_QUERY})`
 
 const PATCH_FIELDS: Record<string, string> = {
   title: 'title',
@@ -143,21 +149,37 @@ const LIST_COLS = ['id', 'slug', 'title', 'summary', 'status', 'keywords', 'cont
 async function generateSlug(title: string): Promise<string> {
   const base = toSlug(title)
   const row = await QueryBuilder('articles').where('slug', 'like', `${base}%`).count('id as cnt').first()
-  const count = Number((row as { cnt: number } | undefined)?.cnt ?? 0)
+  const count = Number((row as { cnt: string | number } | undefined)?.cnt ?? 0)
   return count === 0 ? base : uniqueSlug(base, String(Date.now()))
 }
 
 export class SQLArticleRepository implements IArticleRepository {
   async searchArticles(q: string, limit = 20): Promise<Article[]> {
-    const rows = await QueryBuilder('articles').whereRaw(FULLTEXT, [q]).orderByRaw(`${FULLTEXT} DESC`, [q]).select(LIST_COLS).limit(limit)
+    const rows = await QueryBuilder('articles')
+      .whereRaw(FTS_WHERE, [q])
+      .orderByRaw(`${FTS_RANK} DESC`, [q])
+      .select(LIST_COLS)
+      .limit(limit)
+    return rows.map(parseArticle)
+  }
+
+  async searchSemantic(q: string, limit = 10): Promise<Article[]> {
+    const emb = await generateEmbedding(q)
+    if (!emb) return []
+    const vec = `[${emb.join(',')}]`
+    const rows = await QueryBuilder('articles')
+      .whereNotNull('embedding')
+      .orderByRaw('embedding <=> ?::vector', [vec])
+      .select(LIST_COLS)
+      .limit(limit)
     return rows.map(parseArticle)
   }
 
   async listArticles(filters: ListFilters = {}): Promise<Article[]> {
     let q = QueryBuilder('articles').select(LIST_COLS).orderBy('updated_at', 'desc').limit(50)
     if (filters.status) q = q.where('status', filters.status)
-    if (filters.domain) q = q.whereRaw('JSON_EXTRACT(context, "$.domain") = ?', [filters.domain])
-    if (filters.type) q = q.whereRaw('JSON_EXTRACT(context, "$.type") = ?', [filters.type])
+    if (filters.domain) q = q.whereRaw("context->>'domain' = ?", [filters.domain])
+    if (filters.type) q = q.whereRaw("context->>'type' = ?", [filters.type])
     const rows = await q
     return rows.map(parseArticle)
   }
@@ -174,7 +196,10 @@ export class SQLArticleRepository implements IArticleRepository {
 
   async createArticle(input: CreateArticleInput): Promise<Article> {
     const slug = input.slug ?? (await generateSlug(input.title))
-    const [id] = await QueryBuilder('articles').insert(buildArticleRow(input, slug))
+    const row: Record<string, unknown> = buildArticleRow(input, slug)
+    const emb = await generateEmbedding(buildEmbeddingText(input.title, input.summary ?? null, input.keywords ?? null, input.content))
+    if (emb) row.embedding = `[${emb.join(',')}]`
+    const [{ id }] = await QueryBuilder('articles').insert(row).returning('id')
     return this.saveInitialRevision(id, input.createdBy ?? null)
   }
 
@@ -196,6 +221,8 @@ export class SQLArticleRepository implements IArticleRepository {
     const updated = await this.getArticleById(id)
     if (!updated) throw new NotFoundError('Article not found')
     if (isContentChange(input)) {
+      const emb = await generateEmbedding(buildEmbeddingText(updated.title, updated.summary, updated.keywords, updated.content))
+      if (emb) await QueryBuilder('articles').where('id', id).update({ embedding: `[${emb.join(',')}]` })
       await QueryBuilder('article_revisions').insert({
         id_article: id,
         changed_by: input.changedBy ?? null,
@@ -216,12 +243,14 @@ export class SQLArticleRepository implements IArticleRepository {
   }
 
   async addSource(idArticle: number, input: AddSourceInput): Promise<ArticleSource> {
-    const [id] = await QueryBuilder('article_sources').insert({
-      id_article: idArticle,
-      type: input.type,
-      ref_id: input.refId,
-      meta: serializeJson(input.meta ?? null),
-    })
+    const [{ id }] = await QueryBuilder('article_sources')
+      .insert({
+        id_article: idArticle,
+        type: input.type,
+        ref_id: input.refId,
+        meta: serializeJson(input.meta ?? null),
+      })
+      .returning('id')
     const row = await QueryBuilder('article_sources').where('id', id).first()
     return parseSource(row)
   }
@@ -256,13 +285,15 @@ export class SQLArticleRepository implements IArticleRepository {
   }
 
   async addAsset(idArticle: number, input: AddAssetInput): Promise<ArticleAsset> {
-    const [id] = await QueryBuilder('article_assets').insert({
-      id_article: idArticle,
-      type: input.type,
-      url: input.url,
-      caption: input.caption ?? null,
-      position: input.position ?? 0,
-    })
+    const [{ id }] = await QueryBuilder('article_assets')
+      .insert({
+        id_article: idArticle,
+        type: input.type,
+        url: input.url,
+        caption: input.caption ?? null,
+        position: input.position ?? 0,
+      })
+      .returning('id')
     const row = await QueryBuilder('article_assets').where('id', id).first()
     return parseAsset(row)
   }

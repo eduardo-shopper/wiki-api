@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { SQLArticleRepository } from '@entities/article/SQLArticleRepository'
 import { SuccessResponse } from '@util/response/BaseResponse'
 import { SearchArticlesUseCase } from './SearchArticlesUseCase'
+import { SearchSemanticUseCase } from './SearchSemanticUseCase'
 import { ListArticlesUseCase } from './ListArticlesUseCase'
 import { GetArticleUseCase } from './GetArticleUseCase'
 import { FindBySourceUseCase } from './FindBySourceUseCase'
@@ -36,6 +37,7 @@ function handle(Cls: Ctor, getInput: (req: Request) => unknown, status = 200) {
 }
 
 export const search = handle(SearchArticlesUseCase, (req) => req.query)
+export const searchSemantic = handle(SearchSemanticUseCase, (req) => req.query)
 export const findBySource = handle(FindBySourceUseCase, (req) => req.query)
 export const listArticles = handle(ListArticlesUseCase, (req) => req.query)
 export const getArticle = handle(GetArticleUseCase, (req) => ({ id: req.params.id }))
