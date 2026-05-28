@@ -5,6 +5,7 @@ import {
   ArticleAsset,
   ArticleRevision,
   ArticleStatus,
+  SourceRef,
   CreateArticleInput,
   UpdateArticleInput,
   AddSourceInput,
@@ -15,6 +16,7 @@ import {
 export interface IArticleRepository {
   searchArticles(q: string, limit: number, status?: ArticleStatus): Promise<Article[]>
   searchSemantic(q: string, limit: number, status?: ArticleStatus): Promise<Article[]>
+  searchSemanticSources(q: string, articleLimit: number): Promise<SourceRef[]>
   listArticles(filters: ListFilters): Promise<Article[]>
   getArticleById(id: number): Promise<Article | null>
   findBySource(type: string, refId: string): Promise<Article[]>

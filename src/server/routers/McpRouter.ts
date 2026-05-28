@@ -4,6 +4,13 @@ import { ArticleContext, ArticleStatus, SourceType } from '@entities/Article'
 import { BadRequestError } from '@util/errors/RequestErrors'
 import { SearchArticlesUseCase } from '@contexts/article/SearchArticlesUseCase'
 import { SearchSemanticUseCase } from '@contexts/article/SearchSemanticUseCase'
+import { SearchSemanticSourcesUseCase } from '@contexts/article/SearchSemanticSourcesUseCase'
+import { CreateWorkflowSessionUseCase } from '@contexts/workflow/CreateWorkflowSessionUseCase'
+import { NextWorkflowItemUseCase } from '@contexts/workflow/NextWorkflowItemUseCase'
+import { DoneWorkflowItemUseCase } from '@contexts/workflow/DoneWorkflowItemUseCase'
+import { ListWorkflowItemsUseCase } from '@contexts/workflow/ListWorkflowItemsUseCase'
+import { CleanupWorkflowSessionsUseCase } from '@contexts/workflow/CleanupWorkflowSessionsUseCase'
+import { SQLWorkflowSessionRepository } from '@entities/workflow/SQLWorkflowSessionRepository'
 import { ListArticlesUseCase } from '@contexts/article/ListArticlesUseCase'
 import { GetArticleUseCase } from '@contexts/article/GetArticleUseCase'
 import { FindBySourceUseCase } from '@contexts/article/FindBySourceUseCase'
@@ -33,9 +40,16 @@ type AnyUseCase = {
   execute(): Promise<unknown>
 }
 type UseCaseCtor = new (repo: SQLArticleRepository) => AnyUseCase
+type WorkflowUseCaseCtor = new (repo: SQLWorkflowSessionRepository) => AnyUseCase
 
 async function runUseCase(Cls: UseCaseCtor, args: Args): Promise<unknown> {
   const uc = new Cls(new SQLArticleRepository())
+  await uc.prepare(args)
+  return uc.execute()
+}
+
+async function runWorkflowUseCase(Cls: WorkflowUseCaseCtor, args: Args): Promise<unknown> {
+  const uc = new Cls(new SQLWorkflowSessionRepository())
   await uc.prepare(args)
   return uc.execute()
 }
@@ -44,6 +58,8 @@ const TOOL_HANDLERS: Record<string, (args: Args) => Promise<unknown>> = {
   wiki_search: (args) => runUseCase(SearchArticlesUseCase, args),
 
   wiki_search_semantic: (args) => runUseCase(SearchSemanticUseCase, args),
+
+  wiki_search_sources: (args) => runUseCase(SearchSemanticSourcesUseCase, args),
 
   wiki_list_articles: (args) => runUseCase(ListArticlesUseCase, args),
 
@@ -108,6 +124,16 @@ const TOOL_HANDLERS: Record<string, (args: Args) => Promise<unknown>> = {
     await runUseCase(RemoveAssetUseCase, { assetId: Number(args.assetId) })
     return { removed: true, assetId: Number(args.assetId) }
   },
+
+  workflow_session_create: (args) => runWorkflowUseCase(CreateWorkflowSessionUseCase, args),
+
+  workflow_session_next: (args) => runWorkflowUseCase(NextWorkflowItemUseCase, args),
+
+  workflow_session_done: (args) => runWorkflowUseCase(DoneWorkflowItemUseCase, args),
+
+  workflow_session_list: (args) => runWorkflowUseCase(ListWorkflowItemsUseCase, args),
+
+  workflow_session_cleanup: (args) => runWorkflowUseCase(CleanupWorkflowSessionsUseCase, args),
 }
 
 function callTool(name: string, args: Args): Promise<unknown> {

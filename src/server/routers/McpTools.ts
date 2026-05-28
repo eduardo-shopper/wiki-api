@@ -26,6 +26,18 @@ export const TOOLS = [
     },
   },
   {
+    name: 'wiki_search_sources',
+    description: 'Semantic search that returns only the external source references (sourceType + refId) linked to relevant articles — no article content. Use this to build an exclusion set of already-indexed ClickUp tasks, GitHub PRs, and code files before searching external systems.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        q: { type: 'string', description: 'Natural-language query describing the topic' },
+        limit: { type: 'number', description: 'Max number of articles to scan for sources (default 20)' },
+      },
+      required: ['q'],
+    },
+  },
+  {
     name: 'wiki_list_articles',
     description: 'List articles with optional filters. Good for browsing by domain or status.',
     inputSchema: {
@@ -138,6 +150,57 @@ export const TOOLS = [
       },
       required: ['sourceId'],
     },
+  },
+  {
+    name: 'workflow_session_create',
+    description: 'Create a workflow session and store a list of items in it. Returns a sessionId to reference in subsequent calls. Automatically deletes expired sessions before creating. Use at the end of the research step to hand off sources to capture without passing them through prompts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        step: { type: 'string', description: 'Pipeline step name, e.g. "research"' },
+        items: { type: 'array', items: { type: 'object' }, description: 'Array of payloads to store as session items' },
+        ttlHours: { type: 'number', description: 'Hours until session expires and is cleaned up (default 168 = 7 days)' },
+      },
+      required: ['step', 'items'],
+    },
+  },
+  {
+    name: 'workflow_session_next',
+    description: 'Atomically claim the next pending item from a session. Returns { item, done: false } with the item payload, or { item: null, done: true } when all items are processed. Safe for concurrent agents — no two agents will receive the same item.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionId: { type: 'string', description: 'Session UUID returned by workflow_session_create' },
+      },
+      required: ['sessionId'],
+    },
+  },
+  {
+    name: 'workflow_session_done',
+    description: 'Mark a session item as done after successfully processing it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        itemId: { type: 'number', description: 'Item ID returned by workflow_session_next' },
+      },
+      required: ['itemId'],
+    },
+  },
+  {
+    name: 'workflow_session_list',
+    description: 'List all items in a session with their current status (pending / processing / done / failed). Useful for the final pipeline step to collect all results.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionId: { type: 'string', description: 'Session UUID' },
+      },
+      required: ['sessionId'],
+    },
+  },
+  {
+    name: 'workflow_session_cleanup',
+    description: 'Delete all expired sessions and their items. Safe to call at any time. Also runs automatically on workflow_session_create.',
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'wiki_get_history',

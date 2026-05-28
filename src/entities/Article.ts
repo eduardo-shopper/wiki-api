@@ -92,6 +92,11 @@ export interface ArticleRevision {
   createdAt: Date
 }
 
+export interface SourceRef {
+  sourceType: SourceType
+  refId: string
+}
+
 export interface AddAssetInput {
   type: 'image' | 'video' | 'file'
   url: string

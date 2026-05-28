@@ -6,6 +6,7 @@ import {
   ArticleAsset,
   ArticleRevision,
   ArticleContext,
+  SourceRef,
   CreateArticleInput,
   UpdateArticleInput,
   AddSourceInput,
@@ -175,6 +176,22 @@ export class SQLArticleRepository implements IArticleRepository {
       .select(LIST_COLS)
       .limit(limit)
     return rows.map(parseArticle)
+  }
+
+  async searchSemanticSources(q: string, articleLimit = 20): Promise<SourceRef[]> {
+    const emb = await generateEmbedding(q)
+    if (!emb) return []
+    const vec = `[${emb.join(',')}]`
+    const rows = await QueryBuilder('articles as a')
+      .join('article_sources as s', 'a.id', 's.id_article')
+      .whereNotNull('a.embedding')
+      .orderByRaw('a.embedding <=> ?::vector', [vec])
+      .limit(articleLimit)
+      .select('s.type as source_type', 's.ref_id')
+    return rows.map((r: Record<string, unknown>) => ({
+      sourceType: r.source_type as SourceRef['sourceType'],
+      refId: r.ref_id as string,
+    }))
   }
 
   async listArticles(filters: ListFilters = {}): Promise<Article[]> {
