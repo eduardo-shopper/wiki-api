@@ -1,7 +1,16 @@
 import knex from 'knex'
 import dotenv from 'dotenv'
+import path from 'path'
 
-dotenv.config()
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
+
+function resolveSslConfig() {
+  const sslFlag = process.env.DB_SSL
+  const host = process.env.DB_HOST || ''
+  const shouldUseSsl = sslFlag === 'true' || (sslFlag !== 'false' && host.includes('neon.tech'))
+  if (!shouldUseSsl) return false
+  return { rejectUnauthorized: false }
+}
 
 async function resetDb() {
   const db = process.env.DB_NAME || 'shopper_wiki'
@@ -14,6 +23,7 @@ async function resetDb() {
       user: process.env.DB_USER,
       password: process.env.DB_PASS,
       database: 'postgres',
+      ssl: resolveSslConfig(),
     },
   })
 
